@@ -3,6 +3,7 @@ FUNCTION_FACE_SWAP = "[DEBUG] Face swap function called"
 FACES_DETECTED = "[DEBUG] Faces detected in the image: "
 SUCCESS_SWAPPED_IMAGE = "[DEBUG] Face swapped image successfully"
 IMAGE_SAVED_SUCCESSFULLY = "[DEBUG] Image saved successfully to: "
+FILE_NAME = "[DEBUG] File name: "
 
 
 ERROR_SWAPPING_FACES = "[ERROR] Error swapping faces: "

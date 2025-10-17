@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
-
+#======================================================
 # Importing Python dependencies
 import os
 import json
@@ -18,30 +18,30 @@ from PIL import Image
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 import pillow_heif
-
+#======================================================
 # Importing InsightFace dependencies
 import insightface
 from insightface.app import FaceAnalysis
-
+#======================================================
 # Importing config
-from environment.config import *
-from environment.messages import *
-
+import environment.config as config
+from environment.messages import SERVER_RUNNING
+#======================================================
 # Importing controller dependencies
-from controller.controller import *
+import controller.controller as controller
 
+
+#=============================================================================================
+#===================================INITIALIZATION============================================
+#=============================================================================================
 # Initialize FastAPI
 app = FastAPI()
 
 #Mount Templates Directory
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
+templates = Jinja2Templates(directory=config.TEMPLATES_DIR)
 
 # Mount Static Directory
-app.mount(f"/{STATIC_DIR}", StaticFiles(directory=STATIC_DIR), name="static")
-
-# Load face detection model
-model = FaceAnalysis(name=DETECTION_MODEL_NAME, root=DETECTION_MODEL_ROOT)
-model.prepare(ctx_id=DETECTION_MODEL_CTX_ID)
+app.mount(f"/{config.STATIC_DIR}", StaticFiles(directory=config.STATIC_DIR), name="static")
 
 # Add CORS
 app.add_middleware(
@@ -52,22 +52,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load Swapper Model
-swapper = insightface.model_zoo.get_model(MODEL_PATH, download=False, download_zip=False)
-
 #create threadpool
 executor = ThreadPoolExecutor(max_workers=4)
 
 #load pillow_heif (to handle HEIC images)
 pillow_heif.register_heif_opener()
 
-#==========================================================
-# Routes
+#=============================================================================================
+# Model Loading
+# Load face detection model
+model = FaceAnalysis(name=config.DETECTION_MODEL_NAME, root=config.DETECTION_MODEL_ROOT)
+model.prepare(ctx_id=config.DETECTION_MODEL_CTX_ID)
 
+# Load Swapper Model
+swapper = insightface.model_zoo.get_model(config.MODEL_PATH, download=False, download_zip=False)
+
+
+#=============================================================================================
+#======================================ROUTES=================================================
+#=============================================================================================
+
+# Routes
 #Server Checking Route
 @app.get("/")
 def index(request: Request):
     return JSONResponse({"message": SERVER_RUNNING})
+
+#==========================================================
 
 #Face Swapping Route
 @app.post("/swap_face")
@@ -87,7 +98,7 @@ async def swap_face(
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(
         executor, 
-        face_swap_func, 
+        controller.face_swap_func, 
         image_copy, swapper, model, file.filename
     )
     return result
@@ -96,4 +107,4 @@ async def swap_face(
 # Read Image Route
 @app.get("/read_image")
 def read_image_route(request: Request):
-    return read_image(request)
+    return controller.read_image(request)
